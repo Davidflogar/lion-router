@@ -1,0 +1,12 @@
+{
+    "name": "lion/lion-router",
+    "description": "Lion router.",
+    "type": "libary",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Lion\\LionRouter\\": "src"
+        }
+    },
+    "minimum-stability": "stable"
+}
