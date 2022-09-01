@@ -22,12 +22,17 @@ class RouteStorer
 
         $search = array_key_exists($key, $routes);
 
+        // check if the route exists
         if($search == false)
         {
             $GLOBALS['routes'][$key] = $route;
         }
+        // if it exists we compare the differences and adds them
         else
         {
+            // this is used when adding new middleware or a name to a route,
+            // so any change to a route is automatically saved
+
             // get a copy of the 'action' before deleting it
             $action_from_route = $route['action'];
 
@@ -35,8 +40,6 @@ class RouteStorer
             unset($routes[$key]['action']);
             unset($route['action']);
 
-            var_dump($routes[$key]);
-            die;
             // get the diff
             $diff = array_diff_key($route, $routes[$key]);
 
