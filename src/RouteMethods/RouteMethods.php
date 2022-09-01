@@ -9,104 +9,65 @@ use Lion\LionRouter\RouteStorer;
  */
 class RouteMethods
 {
-    public static function get(string $url, array|callable $action)
+    public static function get(string $url, array|callable $action): static
     {
-        // prepare the url
-        if(!str_starts_with($url, "/"))
-        {
-            $url = "/" . $url;
-        }
+        // process the route
+        $route = RouteMethods::body($url, $action, "GET");
 
-        // create the new route
-        $route = [
-            'action' => $action,
-            'method' => 'GET'
-        ];
-
-        RouteMethods::global_routes_exists($url, $route);
-
-        $route['url'] = $url;
-
-        // return a new instance of the class
+        // return a new instance
         return new static($route);
     }
 
-    public static function post(string $url, array|callable $action)
+    public static function post(string $url, array|callable $action): static
     {
-        // prepare the url
-        if(!str_starts_with($url, "/"))
-        {
-            $url = "/" . $url;
-        }
+        // process the route
+        $route = RouteMethods::body($url, $action, "POST");
 
-        // create the new route
-        $route = [
-            'action' => $action,
-            'method' => 'POST'
-        ];
-
-        RouteMethods::global_routes_exists($url, $route);
-
-        $route['url'] = $url;
-
-        // return a new instance of the class
+        // return a new instance
         return new static($route);
     }
 
-    public static function put(string $url, array|callable $action)
+    public static function put(string $url, array|callable $action): static
     {
-        // prepare the url
-        if(!str_starts_with($url, "/"))
-        {
-            $url = "/" . $url;
-        }
+        // process the route
+        $route = RouteMethods::body($url, $action, "PUT");
 
-        // create the new route
-        $route = [
-            'action' => $action,
-            'method' => 'PUT'
-        ];
-
-        RouteMethods::global_routes_exists($url, $route);
-
-        $route['url'] = $url;
-
-        // return a new instance of the class
+        // return a new instance
         return new static($route);
     }
 
-    public static function delete(string $url, array|callable $action)
+    public static function delete(string $url, array|callable $action): static
     {
-        // prepare the url
-        if(!str_starts_with($url, "/"))
-        {
-            $url = "/" . $url;
-        }
+        // process the route
+        $route = RouteMethods::body($url, $action, "DELETE");
 
-        // create the new route
-        $route = [
-            'action' => $action,
-            'method' => 'DELETE'
-        ];
-
-        RouteMethods::global_routes_exists($url, $route);
-
-        $route['url'] = $url;
-
-        // return a new instance of the class
+        // return a new instance
         return new static($route);
     }
 
     /**
-     * Checks if "$GLOBALS['routes']" exists
+     * This is the main function for, get, post, put and delete methods.
      * 
      * @param string $url
      * @param array $route
      * 
-     * @return void
+     * @return array
      */
-    private static function global_routes_exists(string $url, array $route)
+    private static function body(string $url, array|callable $action, string $method): array
     {
+        // prepare the url
+        if(!str_starts_with($url, "/"))
+        {
+            $url = "/" . $url;
+        }
+
+        // create the new route
+        $route = [
+            'action' => $action,
+            'method' => $method
+        ];
+
+        // checks if "$GLOBALS['routes']" exists
         if(!isset($GLOBALS['routes']))
         {
             $GLOBALS['routes'][$url] = $route;
@@ -116,6 +77,11 @@ class RouteMethods
             // save the route
             RouteStorer::save($url, $route);
         }
+
+        $route['url'] = $url;
+
+        // return the route
+        return $route;
     }
 }
 
