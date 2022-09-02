@@ -2,6 +2,8 @@
 
 namespace Lion\LionRouter;
 
+use Lion\LionRouter\RouteChecker\RouteChecker;
+
 /**
  * Main router.
  */
@@ -63,23 +65,42 @@ class Router
     /**
      * Loads every route.
      * 
-     * @param array $request
+     * @param array $server
+     * 
+     * The value of $server must be the same as $_SERVER
      * 
      * @return void
      */
     public function load(array $server)
     {
+        // get url
         $request_uri = $server['REQUEST_URI'];
 
+        // create a new RouteChecker
+        $rc = new RouteChecker($request_uri, $this->routes);
+
         // check if the url exists
-        if(key_exists($request_uri, $this->routes))
+        if($rc->url_exists())
         {
+            if($rc->url_has_middlewares())
+            {
+
+            }
+
             // check the request method
             $method = $server['REQUEST_METHOD'];
 
-            if($method == $this->routes[$request_uri]['method'])
+            if($method == $rc->url_get_method())
             {
-                $this->routes[$request_uri]['action']();
+                $callable = $rc->url_get_callable();
+
+                // call the action
+                $result =  $callable();
+
+                if($result != null && (is_string($result) || is_int($result)))
+                {
+                    echo $result;
+                }
             }
             else
             {
