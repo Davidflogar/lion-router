@@ -3,6 +3,7 @@
 namespace Lion\LionRouter\RouteChecker;
 
 use Exception;
+use Lion\LionRouter\Helpers\Arrays;
 
 /**
  * This class has methods to access data from a url by the url.
@@ -18,8 +19,31 @@ class RouteChecker
 
     /**
      * The url with which the object will be working.
+     * 
+     * @var string
      */
     private $url;
+
+    /**
+     * The list of valid middlewares.
+     * 
+     * @var array
+     */
+    private $valid_middlewares;
+
+    /**
+     * Set the valid middlewares.
+     * 
+     * @param array $list
+     * 
+     * The list of valid middlewares.
+     * 
+     * @return void
+     */
+    public function setValidMiddlewares(array $list): void
+    {
+        $this->valid_middlewares = $list;
+    }
 
     /**
      * Constructor
@@ -76,6 +100,52 @@ class RouteChecker
     }
 
     /**
+     * Returns the middlewares of the url.
+     * 
+     * @return array
+     */
+    public function url_get_middlewares(): array
+    {
+        $objects = [];
+        $methods = [];
+
+        foreach($this->valid_middlewares as $middleware)
+        {
+            array_push($objects, $middleware[0]);
+            array_push($methods, $middleware[1]);
+        }
+
+        return [
+            'objects' => $objects,
+            'methods' => $methods
+        ];
+    }
+
+    /**
+     * Validates the middlewares of the url based on the list passed as argument.
+     * 
+     * On error it returns the name of the middleware.
+     * 
+     * @return bool
+     */
+    public function url_middlewares_are_valid(): string|bool
+    {
+        // iterate over the middlewares of the url
+        foreach($this->routes[$this->url]['middlewares'] as $middleware)
+        {
+            // check if the middleware exists
+            $exists = key_exists($middleware, $this->valid_middlewares);
+
+            if($exists == false)
+            {
+                return $middleware;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Returns the http method for the route.
      * 
      * @return string
@@ -98,22 +168,34 @@ class RouteChecker
         // check if the action has been added as "array(object, action)"
         if(is_array($action))
         {
-            if(class_exists($action[0]) && method_exists($action[0], $action[1]))
-            {
-                $object = new $action[0];
+            // validate and return the action
+            $error = "Arguments to route with url: \"{$this->url}\" are invalid. Check that the class and the method exists and are valid.";
 
-                return $object->$action[1];
-            }
-            else
-            {
-                throw new Exception("Arguments to route with url: \"{$this->url}\" are invalid.");
-            }
+            Arrays::object_in_array($action, $error);
+
+            $object = new $action[0];
+
+            return $object->$action[1];
         }
         // on the other hand, it means that the action has been added as an anonymous function
-        else
+        else if(is_callable($action))
         {
             return $action;
         }
+    }
+
+    /**
+     * Throws an exception in case the middlewares are not valid.
+     * 
+     * @param string $middleware
+     * 
+     * The middleware.
+     * 
+     * @return void
+     */
+    public function url_middlewares_not_valid_exception(string $middleware): void
+    {
+        throw new Exception("The middleware \"$middleware\" is not valid, check that the middleware exists and is registered.");
     }
 }
 
