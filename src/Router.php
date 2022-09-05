@@ -2,7 +2,6 @@
 
 namespace Lion\LionRouter;
 
-use Exception;
 use Lion\LionRouter\Helpers\Arrays;
 use Lion\LionRouter\RouteChecker\RouteChecker;
 
@@ -132,11 +131,16 @@ class Router
         $rc = new RouteChecker($request_uri, $this->routes);
 
         // check if the url exists
-        if($rc->url_exists())
+        $url = $rc->url_exists();
+
+        if($url)
         {
+            $rc->setUrl($url);
+
             // check if the url has middlewares
             if($rc->url_has_middlewares())
             {
+                // set and validate middlewares
                 $rc->setValidMiddlewares($this->middlewares);
 
                 $are_valid = $rc->url_middlewares_are_valid();

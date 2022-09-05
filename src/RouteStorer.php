@@ -77,6 +77,57 @@ class RouteStorer
             return $search;
         }
     }
+
+    /**
+     * Check if the provided string matches any URL.
+     * 
+     * @param string $string
+     * 
+     * @param array $routes
+     * 
+     * @return bool
+     */
+    public static function matches(string $string, array $routes): bool|string
+    {
+        // this variable has "false" as the value if the URL was not found; otherwise the value will be equal to $string.
+        $found = false;
+
+        foreach ($routes as $route) {
+            // prepare the url
+
+            // if $url is not equal to null, it means the url needs parameters
+            $url = preg_filter("/[\{.*\}]{1,}/", "$0", $route);
+
+            if($url != null)
+            {
+                // convert the url to a regex
+                $old_url = preg_quote($url, "/");
+                $new_url = preg_replace("/(\\\{.*\}){1,}/U", "(.*)", $old_url);
+
+                // check if matches
+                $matches = preg_match("($new_url)", $string);
+
+                if($matches)
+                {
+                    $found = $url;
+
+                    return $found;
+                }
+            }
+            // otherwise it means the url is a static url which means the url will be matched directly
+            else
+            {
+                if($string == $route)
+                {
+                    $found = $route;
+
+                    return $found;
+                }
+            }
+        }
+
+        return $found;
+    }
 }
 
 ?>

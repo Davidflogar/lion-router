@@ -3,7 +3,9 @@
 namespace Lion\LionRouter\RouteChecker;
 
 use Exception;
+use Lion\LionRouter\Exceptions\RouteNotValid;
 use Lion\LionRouter\Helpers\Arrays;
+use Lion\LionRouter\RouteStorer;
 
 /**
  * This class has methods to access data from a url by the url.
@@ -46,6 +48,20 @@ class RouteChecker
     }
 
     /**
+     * Set the url with which the object will be working.
+     * 
+     * @param string $url
+     * 
+     * The url.
+     * 
+     * @return void
+     */
+    public function setUrl(string $url)
+    {
+        $this->url = $url;
+    }
+
+    /**
      * Constructor
      * 
      * @param string $url
@@ -79,14 +95,16 @@ class RouteChecker
     }
 
     /**
-     * Checks if the url exists.
-     * 
+     * Checks if the url exists. If it exists it returns the array key.
      * 
      * @return bool
      */
-    public function url_exists(): bool
+    public function url_exists(): bool|string
     {
-        return isset($this->routes[$this->url]) ? true : false;
+        // check if the url matches with any url
+        $urls = array_column($this->routes, 'url');
+
+        return RouteStorer::matches($this->url, $urls);
     }
 
     /**
@@ -195,7 +213,9 @@ class RouteChecker
      */
     public function url_middlewares_not_valid_exception(string $middleware): void
     {
-        throw new Exception("The middleware \"$middleware\" is not valid, check that the middleware exists and is registered.");
+        $e = new RouteNotValid("The middleware \"$middleware\" is not valid, check that the middleware exists and is registered.");
+
+        throw $e;
     }
 }
 
