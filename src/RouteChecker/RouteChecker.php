@@ -164,11 +164,11 @@ class RouteChecker
     }
 
     /**
-     * Returns the http method for the route.
+     * Validates the http method for the route.
      * 
-     * @return string
+     * @return bool|string
      */
-    public function url_get_method(): string
+    public function url_with_method(): bool|string
     {
         return $this->routes[$this->url]['method'];
     }

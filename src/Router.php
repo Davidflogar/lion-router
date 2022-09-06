@@ -175,7 +175,7 @@ class Router
             // check the request method
             $method = $server['REQUEST_METHOD'];
 
-            if($method == $rc->url_get_method())
+            if($rc->url_with_method($method))
             {
                 $callable = $rc->url_get_callable();
 

@@ -2,6 +2,8 @@
 
 namespace Lion\LionRouter\RouteMethods;
 
+use Exception;
+use Lion\LionRouter\Group\Group;
 use Lion\LionRouter\RouteStorer;
 
 /**
@@ -45,6 +47,29 @@ class RouteMethods
         return new static($route);
     }
 
+    public static function group(array $options, callable $action): void
+    {
+        // set the options required
+        $required = ['prefix'];
+
+        foreach($required as $key)
+        {
+            if(!key_exists($key, $options))
+            {
+                throw new Exception("Cannot create route group, requires key: \"$key\".");
+            }
+        }
+
+        // set the prefix and create prefix
+        $GLOBALS['routes']['_group']['prefix'] = $options['prefix'];
+
+        // call the action
+        $action();
+
+        // unset the group
+        unset($GLOBALS['routes']['_group']);
+    }
+
     /**
      * This is the main function for, get, post, put and delete methods.
      * 
@@ -55,6 +80,12 @@ class RouteMethods
      */
     private static function body(string $url, array|callable $action, string $method): array
     {
+        // this is used when the routes are inside a route group
+        if(Group::in_route())
+        {
+            $url = Group::get_prefix() . $url;
+        }
+
         // prepare the url
         if(!str_starts_with($url, "/"))
         {
@@ -64,7 +95,8 @@ class RouteMethods
         // create the new route
         $route = [
             'action' => $action,
-            'method' => $method
+            'method' => $method,
+            'url' => $url,
         ];
 
         // checks if "$GLOBALS['routes']" exists
@@ -77,8 +109,6 @@ class RouteMethods
             // save the route
             RouteStorer::save($url, $route);
         }
-
-        $route['url'] = $url;
 
         // return the route
         return $route;

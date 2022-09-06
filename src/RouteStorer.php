@@ -2,6 +2,8 @@
 
 namespace Lion\LionRouter;
 
+use Exception;
+
 /**
  * This class has the necessary methods to save and get routes and middlewares in the proper way.
  */
@@ -60,9 +62,9 @@ class RouteStorer
      * 
      * @param string $url
      * 
-     * @return void
+     * @return int|string
      */
-    public static function get_route_by_name(string $name): mixed
+    public static function get_route_by_name(string $name): int|string
     {
         $column = array_column($GLOBALS['routes'], 'name', 'url');
 
@@ -79,7 +81,7 @@ class RouteStorer
     }
 
     /**
-     * Check if the provided string matches any URL.
+     * Checks if the provided string matches any URL.
      * 
      * @param string $string
      * 
@@ -89,9 +91,6 @@ class RouteStorer
      */
     public static function matches(string $string, array $routes): bool|string
     {
-        // this variable has "false" as the value if the URL was not found; otherwise the value will be equal to $string.
-        $found = false;
-
         foreach ($routes as $route) {
             // prepare the url
 
@@ -109,9 +108,7 @@ class RouteStorer
 
                 if($matches)
                 {
-                    $found = $url;
-
-                    return $found;
+                    return $route;
                 }
             }
             // otherwise it means the url is a static url which means the url will be matched directly
@@ -119,15 +116,126 @@ class RouteStorer
             {
                 if($string == $route)
                 {
-                    $found = $route;
-
-                    return $found;
+                    return $string;
                 }
             }
         }
 
-        return $found;
+        return false;
     }
+
+    /**
+     * Returns the parameters of a route.
+     * 
+     * @param string $route
+     * 
+     * @return bool|array
+     */
+    public static function get_url_params(string $route): bool|array
+    {
+        // if $url is not equal to null, it means the url needs parameters
+        $url = preg_filter("/[\{.*\}]{1,}/", "$0", $route);
+
+        if($url != null)
+        {
+            // check if matches
+            $matches = [];
+
+            preg_match_all("/(\{.*\}){1,}/U", $url, $matches);
+
+            if(count($matches) >= 1)
+            {
+                /**
+                 * Here the idea is to make $params have the url parameters in the "params" index.
+                 * And in the "url" index the complete url, but where the parameters would go, the result of the "time" function will go. 
+                 * For later use the result of the time function to identify where the parameters should go.
+                 * Example:
+                 * 
+                 * // example url: /user/{username}/profile
+                 * 
+                 * $time = time();
+                 * 
+                 * $params = [
+                 *      'params' => ['username'],
+                 *      'url' => ['/user/', $time, '/profile'],
+                 *      'token' => [$time],
+                 * ]
+                 * 
+                 */
+
+                $params = [];
+                $params['params'] = str_replace(["{", "}"], "", $matches[0]);
+
+                $time = time();
+
+                $url_splited = preg_replace("/(\{.*\}){1,}/U", $time, $url);
+
+                $new_time = $time + 10;
+
+                foreach($params['params'] as $param)
+                {
+                    $url_splited = preg_replace("($time)", "$param$new_time", $url_splited, 1);
+                }
+
+                $params['url'] = $url_splited;
+
+                $params['token'] = $new_time;
+
+                return $params;
+            }
+        }
+
+        // otherwise it means the url is a static url which means the url does not need any parameters
+        return false;
+    }
+
+    /**
+     * route function.
+     */
+    public static function route(string $name, ?array $data = null, bool $print = true)
+    {
+        $search = RouteStorer::get_route_by_name($name);
+    
+        if($search == 404)
+        {
+            throw new Exception("Could not find route \"$name\".");
+            return;
+        }
+    
+        if(is_array($data))
+        {
+            $params = RouteStorer::get_url_params($search);
+    
+            $token = $params['token'];
+            $search = $params['url'];
+    
+            foreach($params['params'] as $param)
+            {
+                // validate the key to generate the url
+                if(key_exists($param, $data) && is_string($data[$param]))
+                {
+                    $search = str_replace("$param$token", $data[$param], $search);
+                }
+                else
+                {
+                    $keys = implode(", ", $params['params']);
+    
+                    throw new Exception("The keys to generate the route \"$name\" are not valid. Requires \"[$keys]\" and must be passed as a string.");
+                }
+            }
+    
+        }
+    
+        if($print)
+        {
+            echo $search;
+        }
+        else
+        {
+            return $search;
+        }
+    }
+
 }
 
 ?>
