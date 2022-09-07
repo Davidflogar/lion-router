@@ -34,6 +34,25 @@ class RouteChecker
     private $valid_middlewares;
 
     /**
+     * The http method of the request.
+     * 
+     * @var string
+     */
+    private $request_method;
+
+    /**
+     * Sets the http method of the request.
+     * 
+     * @param string $method
+     * 
+     * @return void
+     */
+    public function setMethod(string $method)
+    {
+        $this->request_method = $method;
+    }
+
+    /**
      * Set the valid middlewares.
      * 
      * @param array $list
@@ -58,7 +77,7 @@ class RouteChecker
      */
     public function setUrl(string $url)
     {
-        $this->url = $url;
+        $this->url = $url . "_" . $this->request_method;
     }
 
     /**
@@ -164,11 +183,11 @@ class RouteChecker
     }
 
     /**
-     * Validates the http method for the route.
+     * Returns the http method for the route.
      * 
      * @return bool|string
      */
-    public function url_with_method(): bool|string
+    public function url_get_method(): bool|string
     {
         return $this->routes[$this->url]['method'];
     }

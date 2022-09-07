@@ -8,7 +8,7 @@ namespace Lion\LionRouter\Group;
 class Group
 {
     /**
-     * Check if the current route is in a group.
+     * Checks if the current route is in a group.
      * 
      * @return bool
      */

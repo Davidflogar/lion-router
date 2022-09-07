@@ -19,6 +19,11 @@ class RouteStorer
      */
     public static function save(string $key, array $route)
     {
+        // save the alias
+        $alias = "$key" . "_{$route['method']}";
+
+        $GLOBALS['routes_aliases'][$alias] = $route;
+
         // get all the routes
         $routes = $GLOBALS['routes'];
 

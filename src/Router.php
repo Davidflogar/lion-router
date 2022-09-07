@@ -130,53 +130,58 @@ class Router
         // create a new RouteChecker
         $rc = new RouteChecker($request_uri, $this->routes);
 
+        // set the method
+        $method = $server['REQUEST_METHOD'];
+        $rc->setMethod($method);
+
         // check if the url exists
         $url = $rc->url_exists();
+
+        // unset global variables
 
         if($url)
         {
             $rc->setUrl($url);
 
-            // check if the url has middlewares
-            if($rc->url_has_middlewares())
+            // check the request method
+
+            if($method == $rc->url_get_method($method))
             {
-                // set and validate middlewares
-                $rc->setValidMiddlewares($this->middlewares);
-
-                $are_valid = $rc->url_middlewares_are_valid();
-
-                if(is_bool($are_valid) && $are_valid == true)
+                // check if the url has middlewares
+                if($rc->url_has_middlewares())
                 {
-                    // get the callable middlewares
-                    $callable_middlewares = $rc->url_get_middlewares();
+                    // set and validate middlewares
+                    $rc->setValidMiddlewares($this->middlewares);
 
-                    // call the middlewares
-                    $_ = 0;
+                    $are_valid = $rc->url_middlewares_are_valid();
 
-                    while($_ < count($callable_middlewares['objects']))
+                    if(is_bool($are_valid) && $are_valid == true)
                     {
-                        // create the object where the middleware is
-                        $object = new $callable_middlewares['objects'][$_];
+                        // get the callable middlewares
+                        $callable_middlewares = $rc->url_get_middlewares();
 
-                        // call the function
-                        $function_name = $callable_middlewares['methods'][$_];
+                        // call the middlewares
+                        $_ = 0;
 
-                        $object->$function_name();
+                        while($_ < count($callable_middlewares['objects']))
+                        {
+                            // create the object where the middleware is
+                            $object = new $callable_middlewares['objects'][$_];
 
-                        $_++;
+                            // call the function
+                            $function_name = $callable_middlewares['methods'][$_];
+
+                            $object->$function_name();
+
+                            $_++;
+                        }
+                    }
+                    else
+                    {
+                        $rc->url_middlewares_not_valid_exception($are_valid);
                     }
                 }
-                else
-                {
-                    $rc->url_middlewares_not_valid_exception($are_valid);
-                }
-            }
 
-            // check the request method
-            $method = $server['REQUEST_METHOD'];
-
-            if($rc->url_with_method($method))
-            {
                 $callable = $rc->url_get_callable();
 
                 // call the action
@@ -189,12 +194,16 @@ class Router
             }
             else
             {
+                unset($GLOBALS['routes_aliases']);
+                unset($GLOBALS['routes']);
                 $this->not_allowed_function();
                 return;
             }
         }
         else
         {
+            unset($GLOBALS['routes_aliases']);
+            unset($GLOBALS['routes']);
             $this->not_found_function();
             return;
         }
