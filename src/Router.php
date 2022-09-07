@@ -2,6 +2,7 @@
 
 namespace Lion\LionRouter;
 
+use Lion\LionRouter\Functions\Call;
 use Lion\LionRouter\Helpers\Arrays;
 use Lion\LionRouter\RouteChecker\RouteChecker;
 
@@ -145,8 +146,11 @@ class Router
 
             // check the request method
 
-            if($method == $rc->url_get_method($method))
+            if($rc->url_method_is_valid())
             {
+                // get the params of the url
+                $params = $rc->url_get_params();
+
                 // check if the url has middlewares
                 if($rc->url_has_middlewares())
                 {
@@ -171,7 +175,7 @@ class Router
                             // call the function
                             $function_name = $callable_middlewares['methods'][$_];
 
-                            $object->$function_name();
+                            Call::invoke([$object, $function_name], $params);
 
                             $_++;
                         }
@@ -185,12 +189,8 @@ class Router
                 $callable = $rc->url_get_callable();
 
                 // call the action
-                $result =  $callable();
+                Call::invoke($callable, $params);
 
-                if($result != null && (is_string($result) || is_int($result)))
-                {
-                    echo $result;
-                }
             }
             else
             {

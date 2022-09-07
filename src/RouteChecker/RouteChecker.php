@@ -27,6 +27,13 @@ class RouteChecker
     private $url;
 
     /**
+     * The uri of the request.
+     * 
+     * @var string
+     */
+    private $uri;
+
+    /**
      * The list of valid middlewares.
      * 
      * @var array
@@ -39,6 +46,13 @@ class RouteChecker
      * @var string
      */
     private $request_method;
+
+    /**
+     * The regular expression to validate the url.
+     * 
+     * @var string
+     */
+    private $regex;
 
     /**
      * Sets the http method of the request.
@@ -95,6 +109,8 @@ class RouteChecker
      */
     public function __construct(string $url, array $list)
     {
+        $this->uri = $url;
+
         $this->url = $url;
 
         $this->routes = $list;
@@ -123,7 +139,11 @@ class RouteChecker
         // check if the url matches with any url
         $urls = array_column($this->routes, 'url');
 
-        return RouteStorer::matches($this->url, $urls);
+        $matches = RouteStorer::matches($this->url, $urls, true);
+
+        $this->regex = isset($matches[1]) ? $matches[1] : "";
+
+        return $matches[0];
     }
 
     /**
@@ -183,13 +203,13 @@ class RouteChecker
     }
 
     /**
-     * Returns the http method for the route.
+     * Validates the http method for the route.
      * 
-     * @return bool|string
+     * @return bool
      */
-    public function url_get_method(): bool|string
+    public function url_method_is_valid(): bool
     {
-        return $this->routes[$this->url]['method'];
+        return isset($this->routes[$this->url]) ? true : false;
     }
 
     /**
@@ -219,6 +239,39 @@ class RouteChecker
         {
             return $action;
         }
+    }
+
+    /**
+     * Returns the params of the url.
+     * 
+     * @return mixed
+     */
+    public function url_get_params(): mixed
+    {
+        $matches = [];
+
+        // check if the current url needs parameters
+        if($this->regex != "")
+        {
+            // get the value of the params
+            preg_match("/{$this->regex}/", $this->uri, $matches, PREG_UNMATCHED_AS_NULL);
+
+            unset($matches[0]);
+
+        }
+
+        // get the name of the params
+        $params = RouteStorer::get_url_params($this->routes[$this->url]['url'], true);
+        $url_params = isset($params['params']) ? $params['params'] : [];
+
+        $final_params = [];
+
+        for($counter = 0; $counter < count($url_params); $counter++)
+        {
+            $final_params[$url_params[$counter]] = $matches[$counter+1];
+        }
+
+        return $final_params;
     }
 
     /**

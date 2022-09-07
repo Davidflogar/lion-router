@@ -92,9 +92,11 @@ class RouteStorer
      * 
      * @param array $routes
      * 
-     * @return bool
+     * @param bool $return_regex
+     * 
+     * @return bool|string
      */
-    public static function matches(string $string, array $routes): bool|string
+    public static function matches(string $string, array $routes, bool $return_regex = false): bool|string|array
     {
         foreach ($routes as $route) {
             // prepare the url
@@ -113,7 +115,14 @@ class RouteStorer
 
                 if($matches)
                 {
-                    return $route;
+                    if(!$return_regex)
+                    {
+                        return $route;
+                    }
+                    else
+                    {
+                        return [$route, $new_url];
+                    }
                 }
             }
             // otherwise it means the url is a static url which means the url will be matched directly
