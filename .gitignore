@@ -1,5 +1,1 @@
 /vendor/
-
-# these files are just for development
-index.php
-routes.php
