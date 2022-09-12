@@ -2,6 +2,7 @@
 
 namespace Lion\LionRouter\RouteChecker;
 
+use Closure;
 use Exception;
 use Lion\LionRouter\Exceptions\RouteNotValid;
 use Lion\LionRouter\Helpers\Arrays;
@@ -81,7 +82,7 @@ class RouteChecker
     }
 
     /**
-     * Set the url with which the object will be working.
+     * Sets the url with which the object will be working.
      * 
      * @param string $url
      * 
@@ -141,9 +142,17 @@ class RouteChecker
 
         $matches = RouteStorer::matches($this->url, $urls, true);
 
-        $this->regex = isset($matches[1]) ? $matches[1] : "";
+        if(is_array($matches))
+        {
+            $this->regex = isset($matches[1]) ? $matches[1] : "";
 
-        return $matches[0];
+            return $matches[0];
+        }
+        else
+        {
+            return $matches;
+        }
+
     }
 
     /**
@@ -217,7 +226,7 @@ class RouteChecker
      *
      * @return callable
      */
-    public function url_get_callable(): callable
+    public function url_get_callable(): callable|array
     {
         // get the action
         $action = $this->routes[$this->url]['action'];
@@ -230,9 +239,7 @@ class RouteChecker
 
             Arrays::object_in_array($action, $error);
 
-            $object = new $action[0];
-
-            return $object->$action[1];
+            return $action;
         }
         // on the other hand, it means that the action has been added as an anonymous function
         else if(is_callable($action))

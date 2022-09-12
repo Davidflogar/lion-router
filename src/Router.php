@@ -33,6 +33,13 @@ class Router
     private $middlewares = [];
 
     /**
+     * The array where the parameters by type will be saved.
+     * 
+     * @var array
+     */
+    private $params_by_type = [];
+
+    /**
      * Calls the "not_found" function
      */
     public function not_found_function()
@@ -115,6 +122,35 @@ class Router
     }
 
     /**
+     * Loads a new parameter by type.
+     * 
+     * IMPORTANT: when you add a new parameter by type, it will be automatically prioritized.
+     * Which means that it will be passed as a parameter with the first match. 
+     * After that it will be removed.
+     * 
+     * @param string $type
+     * 
+     * The type of the parameter. It must be passed as a string.
+     * 
+     * @param mixed $value
+     * 
+     * The value of the parameter. 
+     * If it is callable, the function will be called, and the return value of the function will be the value of the parameter. 
+     * Example:
+     *
+     *       ->load_parameter_by_type("Example", function()
+     *       {
+     *           return "Test"
+     *       })
+     * 
+     * @return void
+     */
+    public function load_parameter_by_type(string $type, mixed $value)
+    {
+        $this->params_by_type[$type] = $value;
+    }
+
+    /**
      * Loads every route.
      * 
      * @param array $server
@@ -175,7 +211,7 @@ class Router
                             // call the function
                             $function_name = $callable_middlewares['methods'][$_];
 
-                            Call::invoke([$object, $function_name], $params);
+                            Call::invoke([$object, $function_name], $params, $this->params_by_type);
 
                             $_++;
                         }
@@ -189,7 +225,7 @@ class Router
                 $callable = $rc->url_get_callable();
 
                 // call the action
-                Call::invoke($callable, $params);
+                Call::invoke($callable, $params, $this->params_by_type);
 
             }
             else

@@ -24,7 +24,17 @@ class Group
      */
     public static function get_prefix(): string
     {
-        return $GLOBALS['routes']['_group']['prefix'];
+        return isset($GLOBALS['routes']['_group']['prefix']) ? $GLOBALS['routes']['_group']['prefix'] : "";
+    }
+
+    /**
+     * Returns the main name of the group.
+     * 
+     * @return string
+     */
+    public static function get_base_name(): string
+    {
+        return isset($GLOBALS['routes']['_group']['name']) ? $GLOBALS['routes']['_group']['name'] : "";
     }
 }
 

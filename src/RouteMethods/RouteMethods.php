@@ -2,7 +2,6 @@
 
 namespace Lion\LionRouter\RouteMethods;
 
-use Exception;
 use Lion\LionRouter\Group\Group;
 use Lion\LionRouter\RouteStorer;
 
@@ -49,19 +48,11 @@ class RouteMethods
 
     public static function group(array $options, callable $action): void
     {
-        // set the options required
-        $required = ['prefix'];
-
-        foreach($required as $key)
+        // set the options
+        foreach($options as $key => $value)
         {
-            if(!key_exists($key, $options))
-            {
-                throw new Exception("Cannot create route group, requires key: \"$key\".");
-            }
+            $GLOBALS['routes']['_group'][$key] = $value;
         }
-
-        // set the prefix and create prefix
-        $GLOBALS['routes']['_group']['prefix'] = $options['prefix'];
 
         // call the action
         $action();

@@ -2,6 +2,7 @@
 
 namespace Lion\LionRouter;
 
+use Lion\LionRouter\Group\Group;
 use Lion\LionRouter\RouteMethods\RouteMethods;
 
 /**
@@ -56,7 +57,7 @@ class Route extends RouteMethods
      */
     public function name(string $name): self
     {
-        $this->route['name'] = $name;
+        $this->route['name'] = Group::get_base_name() . $name;
 
         $this->save();
 

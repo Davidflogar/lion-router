@@ -63,21 +63,31 @@ class RouteStorer
     }
 
     /**
-     * Gets a route by its name. Or returns 404 if it not exists.
+     * Gets a route by its name. Or returns a list of matches with similar names if the route is not found.
      * 
      * @param string $url
      * 
-     * @return int|string
+     * @return array|string
      */
-    public static function get_route_by_name(string $name): int|string
+    public static function get_route_by_name(string $name): array|string
     {
-        $column = array_column($GLOBALS['routes'], 'name', 'url');
+        $column = array_column($GLOBALS['routes_aliases'], 'name', 'url');
 
         $search = array_search($name, $column);
 
         if($search == false)
         {
-            return 404;
+            // if the route does not exists we return a list of matches with similar names
+            $names = [];
+
+            foreach($column as $route)
+            {
+                if (preg_match("/.*$name.*/", $route, $match)) {
+                    $names[] = $match[0];
+                }
+            }
+
+            return $names;
         }
         else
         {
@@ -98,30 +108,35 @@ class RouteStorer
      */
     public static function matches(string $string, array $routes, bool $return_regex = false): bool|string|array
     {
-        foreach ($routes as $route) {
-            // prepare the url
+        // this variable will store each match
+        $all_matches = [
+            'statics' => [],
+            'not-statics' => [],
+        ];
 
+        foreach ($routes as $route) {
             // if $url is not equal to null, it means the url needs parameters
             $url = preg_filter("/[\{.*\}]{1,}/", "$0", $route);
 
             if($url != null)
             {
+
                 // convert the url to a regex
                 $old_url = preg_quote($url, "/");
-                $new_url = preg_replace("/(\\\{.*\}){1,}/U", "(.*)", $old_url);
+                $new_url = preg_replace("/(\\\{.*\}){1,}/iU", "(.*)", $old_url);
 
                 // check if matches
-                $matches = preg_match("($new_url)", $string);
+                $matches = preg_match("/$new_url/i", $string);
 
                 if($matches)
                 {
                     if(!$return_regex)
                     {
-                        return $route;
+                        array_push($all_matches['statics'], $route);
                     }
                     else
                     {
-                        return [$route, $new_url];
+                        $all_matches['not-statics'][$route] = $new_url;
                     }
                 }
             }
@@ -130,9 +145,19 @@ class RouteStorer
             {
                 if($string == $route)
                 {
-                    return $string;
+                    array_push($all_matches['statics'], $route);
                 }
             }
+        }
+
+        // here we return the first match with a static url, if exists
+        if(isset($all_matches['statics'][0])) return $all_matches['statics'][0];
+
+        // and here we return the first match with a not static url, if exists
+        foreach($all_matches['not-statics'] as $match => $regex)
+        {
+            // return the first match
+            return [$match, $regex];
         }
 
         return false;
@@ -155,7 +180,7 @@ class RouteStorer
             // check if matches
             $matches = [];
 
-            preg_match_all("/(\{.*\}){1,}/U", $url, $matches);
+            preg_match_all("/(\{.*\}){1,}/iU", $url, $matches);
 
             if(count($matches) >= 1)
             {
@@ -182,13 +207,13 @@ class RouteStorer
 
                 $time = time();
 
-                $url_splited = preg_replace("/(\{.*\}){1,}/U", $time, $url);
+                $url_splited = preg_replace("/(\{.*\}){1,}/iU", $time, $url);
 
                 $new_time = $time + 10;
 
                 foreach($params['params'] as $param)
                 {
-                    $url_splited = preg_replace("($time)", "$param$new_time", $url_splited, 1);
+                    $url_splited = preg_replace("/$time/i", "$param$new_time", $url_splited, 1);
                 }
 
                 $params['url'] = $url_splited;
@@ -209,17 +234,27 @@ class RouteStorer
     public static function route(string $name, ?array $data = null, bool $print = true)
     {
         $search = RouteStorer::get_route_by_name($name);
-    
-        if($search == 404)
+
+        if(is_array($search))
         {
-            throw new Exception("Could not find route \"$name\".");
+            $routes = implode(", ", $search);
+
+            throw new Exception("Could not find route \"$name\". Did you mean one of these $routes?");
             return;
         }
-    
-        if(is_array($data))
+
+        // check if the url needs params
+        $params = RouteStorer::get_url_params($search);
+
+        if($params != false && !is_array($data))
         {
-            $params = RouteStorer::get_url_params($search);
-    
+            $keys = implode(", ", $params['params']);
+
+            throw new Exception("The keys to generate the route \"$name\" are not valid. Requires \"[$keys]\" and must be passed as a string.");
+        }
+
+        if(is_array($data) && $params != false)
+        {
             $token = $params['token'];
             $search = $params['url'];
     
@@ -232,8 +267,11 @@ class RouteStorer
                 }
                 else
                 {
-                    $keys = implode(", ", $params['params']);
-    
+                    if(!isset($keys))
+                    {
+                        $keys = implode(", ", $params['params']);
+                    }
+
                     throw new Exception("The keys to generate the route \"$name\" are not valid. Requires \"[$keys]\" and must be passed as a string.");
                 }
             }
